@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Local Claude Code config (hooks reference machine-specific paths)
+.claude/
+
+# Editor / OS junk
+*.swp
+*.swo
+.vscode/
+.idea/
