@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MVP 1 · 應收帳款動態定價 · 智慧供應鏈金融平台</title>
+<style>
+:root{
+  --c-bg:#f4f6fa; --c-surface:#fff; --c-surface-alt:#fafbfd;
+  --c-text:#0f1f3a; --c-text-2:#4a5878; --c-text-3:#8a98b3;
+  --c-accent:#0d4f7e; --c-accent-2:#2980c4;
+  --c-positive:#137a5e; --c-positive-bg:#e6f4ef;
+  --c-warn:#b8730a; --c-warn-bg:#fcf3e2;
+  --c-danger:#a23217; --c-danger-bg:#fbeae3;
+  --c-border:#dde4ee; --c-divider:#ebeff5; --c-chip:#eef2f7;
+  --r:8px; --r-lg:14px;
+  --shadow:0 1px 3px rgba(15,31,58,.06),0 4px 16px rgba(15,31,58,.04);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;
+  --font-mono:'SF Mono','JetBrains Mono','Menlo','Consolas',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);background:var(--c-bg);color:var(--c-text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.topbar{background:var(--c-surface);border-bottom:1px solid var(--c-border);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--c-accent),var(--c-accent-2));color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
+.brand-text strong{display:block;font-size:14px}
+.brand-text small{color:var(--c-text-3);font-size:11px;letter-spacing:.5px}
+.topnav{display:flex;gap:4px;flex-wrap:wrap}
+.topnav a{padding:6px 14px;border-radius:6px;font-size:13px;color:var(--c-text-2);text-decoration:none}
+.topnav a:hover{background:var(--c-chip);color:var(--c-text)}
+.topnav a.active{background:var(--c-accent);color:#fff}
+.page-header{padding:28px 32px 20px;background:var(--c-surface);border-bottom:1px solid var(--c-border)}
+.page-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--c-warn-bg);color:var(--c-warn);font-size:11px;font-weight:600;letter-spacing:.4px;margin-bottom:8px}
+.page-header h1{margin:0 0 4px;font-size:22px;font-weight:600}
+.page-header p{margin:0;color:var(--c-text-3);font-size:13px}
+.container{max-width:1320px;margin:0 auto;padding:24px 32px;display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media (max-width:1000px){.container{grid-template-columns:1fr}}
+.panel{background:var(--c-surface);border-radius:var(--r-lg);border:1px solid var(--c-border);box-shadow:var(--shadow);overflow:hidden;margin-bottom:20px}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--c-divider);font-size:11px;font-weight:600;color:var(--c-text-2);letter-spacing:.6px;text-transform:uppercase;background:var(--c-surface-alt)}
+.panel-body{padding:18px}
+label.field{display:block;margin-bottom:18px}
+label.field>span{display:block;font-size:12px;color:var(--c-text-2);margin-bottom:6px;font-weight:500}
+select,input[type=number]{width:100%;padding:8px 12px;border:1px solid var(--c-border);border-radius:var(--r);font-family:inherit;font-size:14px;background:var(--c-surface);color:var(--c-text)}
+select:focus,input:focus{outline:none;border-color:var(--c-accent);box-shadow:0 0 0 3px rgba(13,79,126,.1)}
+.range-with-value{display:flex;align-items:center;gap:10px}
+.range-with-value input[type=range]{flex:1;accent-color:var(--c-accent)}
+.range-with-value .value-display{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:64px;text-align:right;color:var(--c-text)}
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip-btn{padding:5px 11px;border-radius:99px;border:1px solid var(--c-border);background:var(--c-surface);font-size:12px;cursor:pointer;color:var(--c-text-2);transition:all .15s;font-family:inherit}
+.chip-btn:hover{background:var(--c-chip);border-color:var(--c-text-3)}
+.chip-btn.active{background:var(--c-accent);color:#fff;border-color:var(--c-accent)}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-bottom:1px solid var(--c-divider)}
+.metric{padding:18px 20px;border-right:1px solid var(--c-divider);background:var(--c-surface-alt);display:flex;flex-direction:column;gap:4px}
+.metric:last-child{border-right:none}
+.metric-label{font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.5px}
+.metric-value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;line-height:1.2}
+.metric-sub{font-size:11px;color:var(--c-text-3);font-family:var(--font-mono)}
+.metric.highlight .metric-value{color:var(--c-accent)}
+.metric.positive .metric-value{color:var(--c-positive)}
+.metric.warn .metric-value{color:var(--c-warn)}
+.metric.danger .metric-value{color:var(--c-danger)}
+.section-header{padding:18px 18px 6px;font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.callout{margin:14px 18px;padding:12px 14px;border-radius:var(--r);background:var(--c-positive-bg);border-left:3px solid var(--c-positive);font-size:13px}
+.callout strong{font-weight:600}
+.savings-badge{display:inline-block;padding:2px 8px;border-radius:99px;background:var(--c-positive);color:#fff;font-size:11px;font-weight:600;font-family:var(--font-mono)}
+.savings-badge.neg{background:var(--c-danger)}
+
+.breakdown{padding:18px}
+.breakdown-bar{display:flex;height:36px;border-radius:6px;overflow:hidden;margin-bottom:10px;border:1px solid var(--c-border)}
+.breakdown-segment{display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-family:var(--font-mono);font-weight:600;min-width:24px;transition:all .2s}
+.breakdown-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px;font-size:12px}
+.legend-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;background:var(--c-surface-alt)}
+.legend-swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.legend-text{flex:1}
+.legend-value{font-family:var(--font-mono);font-weight:600;color:var(--c-text)}
+
+.compare-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.compare-table th,.compare-table td{padding:10px 18px;text-align:right;border-bottom:1px solid var(--c-divider)}
+.compare-table th{text-align:left;font-weight:600;color:var(--c-text-2);background:var(--c-surface-alt);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
+.compare-table td:first-child{text-align:left;font-weight:500}
+.compare-table td.mono{font-family:var(--font-mono)}
+.compare-table tr.row-dynamic{background:rgba(19,122,94,.08);font-weight:500}
+
+.batch-table{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums}
+.batch-table th,.batch-table td{padding:9px 14px;text-align:right;border-bottom:1px solid var(--c-divider)}
+.batch-table th{text-align:left;font-weight:600;color:var(--c-text-2);background:var(--c-surface-alt);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
+.batch-table td:first-child,.batch-table td:nth-child(2){text-align:left}
+.batch-table td.mono{font-family:var(--font-mono)}
+.batch-table tr:hover{background:var(--c-surface-alt)}
+
+.footer{padding:16px 32px;text-align:center;font-size:12px;color:var(--c-text-3)}
+
+/* === 跨 MVP 導覽 + 主角卡 + Before/After + tooltip + 整合卡 === */
+.cross-nav{display:flex;align-items:center;gap:8px;padding:10px 32px;background:var(--c-surface-alt);border-bottom:1px solid var(--c-divider);font-size:12px;flex-wrap:wrap}
+.cross-nav a{color:var(--c-text-3);text-decoration:none;padding:4px 8px;border-radius:4px}
+.cross-nav a:hover{color:var(--c-text);background:var(--c-chip)}
+.cross-nav .current{color:var(--c-accent);font-weight:600;padding:4px 8px;border-radius:4px;background:rgba(13,79,126,.08)}
+.cross-nav .sep{color:var(--c-text-3)}
+
+.persona-card{background:linear-gradient(135deg,#fff,var(--c-surface-alt));border:1px solid var(--c-border);border-radius:var(--r-lg);margin:14px 32px 0;box-shadow:var(--shadow);overflow:hidden}
+.persona-head{padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid transparent;transition:border-color .15s}
+.persona-card.open .persona-head{border-bottom-color:var(--c-divider)}
+.persona-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent),var(--c-accent-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.persona-summary{flex:1;font-size:13px;color:var(--c-text-2)}
+.persona-summary strong{color:var(--c-text);font-size:14px;display:block;margin-bottom:1px}
+.persona-toggle{font-size:12px;color:var(--c-accent);font-weight:600;flex-shrink:0}
+.persona-body{display:none;padding:14px 18px;background:var(--c-surface);grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.persona-card.open .persona-body{display:grid}
+.persona-fact{font-size:12px}
+.persona-fact small{display:block;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.4px;font-size:10px;margin-bottom:2px}
+.persona-fact strong{font-family:var(--font-mono);color:var(--c-text);font-size:13px}
+
+.ba-card{margin:14px 32px 0;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.ba-tabs{display:flex;background:var(--c-surface-alt);border-bottom:1px solid var(--c-divider)}
+.ba-tab{flex:1;padding:14px 18px;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:600;color:var(--c-text-3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ba-tab:hover{color:var(--c-text-2);background:rgba(0,0,0,.02)}
+.ba-tab.active{color:var(--c-text);background:var(--c-surface)}
+.ba-tab.tab-bad.active{border-bottom-color:var(--c-danger);color:var(--c-danger)}
+.ba-tab.tab-good.active{border-bottom-color:var(--c-positive);color:var(--c-positive)}
+.ba-icon{display:inline-flex;width:20px;height:20px;border-radius:50%;font-size:11px;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.ba-tab.tab-bad .ba-icon{background:var(--c-danger)}
+.ba-tab.tab-good .ba-icon{background:var(--c-positive)}
+.ba-content{display:none;padding:24px;grid-template-columns:1fr 1.4fr;gap:24px;align-items:center}
+.ba-content.active{display:grid}
+@media (max-width:768px){.ba-content.active{grid-template-columns:1fr}}
+.ba-result{padding:18px 22px;border-radius:10px}
+.ba-result.bad{background:var(--c-danger-bg);border:1px solid rgba(162,50,23,.2)}
+.ba-result.good{background:var(--c-positive-bg);border:1px solid rgba(19,122,94,.2)}
+.ba-result-label{font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:6px}
+.ba-result-value{font-family:var(--font-mono);font-size:30px;font-weight:700;line-height:1.1;margin-bottom:6px}
+.ba-result.bad .ba-result-value{color:var(--c-danger)}
+.ba-result.good .ba-result-value{color:var(--c-positive)}
+.ba-result-detail{font-size:12px;color:var(--c-text-2);font-family:var(--font-mono)}
+.ba-explain h4{margin:0 0 8px;font-size:14px;font-weight:600}
+.ba-explain ul{margin:0;padding-left:18px;font-size:13px;color:var(--c-text-2);line-height:1.7}
+.ba-explain ul li strong{color:var(--c-text)}
+
+.why{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--c-chip);color:var(--c-text-3);font-size:10px;font-weight:700;cursor:help;margin-left:4px;position:relative;font-family:var(--font-sans);text-transform:none;letter-spacing:0}
+.why:hover{background:var(--c-accent);color:#fff}
+.why::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0f1f3a;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:400;white-space:normal;width:240px;line-height:1.5;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.15);text-align:left}
+.why:hover::after{opacity:1}
+.why::before{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#0f1f3a;opacity:0;pointer-events:none;transition:opacity .15s}
+.why:hover::before{opacity:1}
+
+.integration-bottom{margin:24px 32px 0;background:linear-gradient(135deg,#0d4f7e 0%,#1a3354 100%);color:#fff;border-radius:var(--r-lg);padding:24px 28px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;box-shadow:var(--shadow)}
+@media (max-width:768px){.integration-bottom{grid-template-columns:1fr}}
+.integration-bottom-text strong{display:block;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px}
+.integration-bottom-text h4{margin:0 0 6px;font-size:18px;font-weight:600}
+.integration-bottom-text p{margin:0;font-size:13px;color:rgba(255,255,255,.85);line-height:1.6}
+.integration-bottom-text p span.tag-mono{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:2px 8px;border-radius:4px;margin:0 2px}
+.integration-bottom-cta{display:flex;flex-direction:column;gap:8px}
+.integration-bottom .btn-next{padding:10px 18px;background:#fff;color:var(--c-accent);border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;text-align:center;transition:all .15s;white-space:nowrap}
+.integration-bottom .btn-next:hover{background:var(--c-positive-bg)}
+.integration-bottom .btn-back{padding:10px 18px;background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.3);border-radius:6px;text-decoration:none;font-size:13px;text-align:center;transition:all .15s}
+.integration-bottom .btn-back:hover{background:rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="logo">SC</div><div class="brand-text"><strong>智慧供應鏈金融平台</strong><small>SMART SUPPLY CHAIN FINANCE PLATFORM</small></div></div>
+  <nav class="topnav"><a href="index.html">總覽</a><a href="MVP3-inventory-var.html">MVP 3 · 存貨 VaR</a><a href="MVP1-reverse-factoring.html" class="active">MVP 1 · 動態定價</a><a href="MVP2-alt-credit-scoring.html">MVP 2 · 替代信評</a></nav>
+</header>
+
+<section class="page-header">
+  <div class="page-tag">● MVP 1 · 半 GREENFIELD · 第二棒</div>
+  <h1>應收帳款動態定價系統</h1>
+  <p>Reverse Factoring Dynamic Pricing — 用核心買方信用解放 SME 應收帳款現金流</p>
+</section>
+
+<!-- 跨 MVP 導覽 -->
+<div class="cross-nav">
+  <a href="index.html">🏠 案件總覽</a>
+  <span class="sep">›</span>
+  <a href="MVP3-inventory-var.html">MVP 3 · 存貨 VaR</a>
+  <span class="sep">›</span>
+  <span class="current">▶ MVP 1 · 動態定價 (本站)</span>
+  <span class="sep">›</span>
+  <a href="MVP2-alt-credit-scoring.html">MVP 2 · 替代信評</a>
+  <span class="sep">›</span>
+  <a href="index.html">整合決策</a>
+</div>
+
+<!-- 主角案件背景卡 -->
+<div class="persona-card open" id="persona">
+  <div class="persona-head" onclick="document.getElementById('persona').classList.toggle('open');this.querySelector('.persona-toggle').textContent=document.getElementById('persona').classList.contains('open')?'收合 ▴':'展開 ▾'">
+    <div class="persona-avatar">陳</div>
+    <div class="persona-summary">
+      <strong>陳老闆 · 對台積電應收帳款 1,200 萬 · NET 90 天</strong>
+      陳老闆是台積電的銅件加工二級供應商。傳統銀行用陳老闆自己的信用定價 (4.5%)；我們用台積電 AAA 信用定價，利率立刻砍半。
+    </div>
+    <span class="persona-toggle">收合 ▴</span>
+  </div>
+  <div class="persona-body">
+    <div class="persona-fact"><small>應收對象</small><strong>台積電 (AAA · PD 0.05%)</strong></div>
+    <div class="persona-fact"><small>應收金額</small><strong>NT$ 1,200 萬</strong></div>
+    <div class="persona-fact"><small>付款期限</small><strong>NET 90 天</strong></div>
+    <div class="persona-fact"><small>陳老闆 SME 信用</small><strong>無聯徵 (傳統不接受)</strong></div>
+    <div class="persona-fact"><small>傳統靜態利率</small><strong>4.50%</strong></div>
+    <div class="persona-fact"><small>動態利率 (本站)</small><strong>2.56%</strong></div>
+    <div class="persona-fact"><small>90 天節省</small><strong>NT$ 5.7 萬</strong></div>
+    <div class="persona-fact"><small>融資來源</small><strong>應收帳款 (非陳老闆借款)</strong></div>
+  </div>
+</div>
+
+<!-- Before / After 切換 -->
+<div class="ba-card">
+  <div class="ba-tabs">
+    <button class="ba-tab tab-bad" data-ba="bad"><span class="ba-icon">✕</span>傳統靜態定價</button>
+    <button class="ba-tab tab-good active" data-ba="good"><span class="ba-icon">✓</span>動態定價 (本平台)</button>
+  </div>
+  <div class="ba-content" data-ba-pane="bad">
+    <div class="ba-result bad">
+      <div class="ba-result-label">傳統銀行給陳老闆的報價</div>
+      <div class="ba-result-value">4.50%</div>
+      <div class="ba-result-detail">90 天利息 NT$ 13.3 萬 · 一視同仁</div>
+    </div>
+    <div class="ba-explain">
+      <h4>為什麼台積電的應收和高風險的應收同一個利率？</h4>
+      <ul>
+        <li><strong>銀行手冊一張表</strong>:保理利率不分買方、不分期限、不分產業</li>
+        <li><strong>系統限制</strong> — 核心系統 1990 年代寫的，沒有 buyer-by-buyer 定價欄位</li>
+        <li><strong>核貸專員不敢動</strong> — 偏離手冊就要寫一堆 exception report</li>
+        <li>結果:<strong>低風險買方的供應商被高估價、高風險的被低估價</strong> — 兩邊都不公平</li>
+        <li>對陳老闆:每張應收多付 0.5% 利息，年化下來吃掉一個月利潤</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ba-content active" data-ba-pane="good">
+    <div class="ba-result good">
+      <div class="ba-result-label">平台給陳老闆的動態定價</div>
+      <div class="ba-result-value">2.56%</div>
+      <div class="ba-result-detail">90 天利息 NT$ 7.6 萬 · 為陳老闆節省 NT$ 5.7 萬 (-43%)</div>
+    </div>
+    <div class="ba-explain">
+      <h4>用核心買方 (台積電) 的信用，不是 SME 的信用</h4>
+      <ul>
+        <li><strong>資金成本 1.80%</strong> + 買方 PD 貼水 0.02% (台積電 AAA)</li>
+        <li><strong>+ 期限 0.24%</strong> + 操作 0.30% + 流動性 0.20%</li>
+        <li>= <strong>2.56%</strong> 動態利率 — 反映台積電幾乎不可能違約的事實</li>
+        <li>陳老闆完全沒被評估，因為融資對象本質是「台積電 90 天後付款」</li>
+        <li>如果換成中型上市公司應收，利率會變 ~2.62% (透明可解釋)</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <aside>
+    <div class="panel">
+      <div class="panel-header">案件資訊 · Invoice</div>
+      <div class="panel-body">
+        <label class="field">
+          <span>核心買方 (Core Buyer)</span>
+          <select id="buyer">
+            <option value="tsmc">台積電 (AAA · PD 0.05%)</option>
+            <option value="foxconn">鴻海集團 (AA · PD 0.15%)</option>
+            <option value="midcap">中型上市公司 (A · PD 0.50%)</option>
+            <option value="smallcap">中小型企業 (BBB · PD 2.00%)</option>
+            <option value="risky">高風險買方 (BB · PD 5.00%)</option>
+          </select>
+        </label>
+        <label class="field">
+          <span>發票金額 (NTD)</span>
+          <input type="number" id="amount" value="5000000" step="100000" min="0">
+          <div class="preset-row">
+            <button class="chip-btn preset-amt" data-val="500000">$0.5M</button>
+            <button class="chip-btn preset-amt" data-val="5000000">$5M</button>
+            <button class="chip-btn preset-amt" data-val="50000000">$50M</button>
+          </div>
+        </label>
+        <label class="field">
+          <span>付款期限 Tenor</span>
+          <div class="range-with-value">
+            <input type="range" id="tenor" min="15" max="180" step="5" value="60">
+            <span class="value-display" id="tenorVal">60 天</span>
+          </div>
+        </label>
+        <label class="field">
+          <span>市場資金成本 (年化)</span>
+          <div class="range-with-value">
+            <input type="range" id="funding" min="0.5" max="5" step="0.1" value="1.8">
+            <span class="value-display" id="fundingVal">1.80%</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">傳統靜態定價 · Baseline</div>
+      <div class="panel-body">
+        <label class="field" style="margin:0">
+          <span>銀行內部統一保理利率</span>
+          <div class="range-with-value">
+            <input type="range" id="staticRate" min="2" max="8" step="0.1" value="4.5">
+            <span class="value-display" id="staticRateVal">4.50%</span>
+          </div>
+        </label>
+      </div>
+    </div>
+  </aside>
+
+  <main>
+    <div class="panel">
+      <div class="metrics-grid">
+        <div class="metric highlight">
+          <div class="metric-label">動態年化利率<span class="why" data-tip="不分客戶一律 4.5% 是錯的。動態定價拆解 = 資金成本 + 買方 PD 貼水 + 期限 + 操作 + 流動性。買方信用越好利率越低。">?</span></div>
+          <div class="metric-value" id="dynRate">—</div>
+          <div class="metric-sub" id="dynRateBuyer">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">總利息成本<span class="why" data-tip="按發票金額 × 動態利率 × (期限/365) 計算。期限越長累積利息越多，但平台仍比靜態定價便宜。">?</span></div>
+          <div class="metric-value" id="dynInterest">—</div>
+          <div class="metric-sub" id="dynTenor">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">傳統靜態利息<span class="why" data-tip="銀行手冊統一保理利率 (預設 4.5%) 計算的同樣案件結果。對 AAA 買方供應商過於保守，對 BBB 以下又過於激進。">?</span></div>
+          <div class="metric-value" id="staticInterest">—</div>
+          <div class="metric-sub" id="staticRateNote">—</div>
+        </div>
+        <div class="metric positive">
+          <div class="metric-label">為 SME 節省<span class="why" data-tip="動態 vs 靜態的利息差。台積電供應商可省下 30-45%，BBB 級則可能更貴 — 反映真實風險定價。">?</span></div>
+          <div class="metric-value" id="savings">—</div>
+          <div class="metric-sub" id="savingsPct">—</div>
+        </div>
+      </div>
+
+      <div class="callout" id="reco">
+        <strong>建議:</strong> 對 <strong id="buyerName">—</strong> 之 SME 供應商，本筆 <strong id="amtInline">—</strong> 應收帳款動態定價為 <strong id="rateInline">—</strong>。
+        較傳統定價 <span class="savings-badge" id="savingsBadge">—</span>。
+      </div>
+
+      <div class="section-header">利率組成拆解 · Rate Build-up</div>
+      <div class="breakdown">
+        <div class="breakdown-bar" id="breakdownBar"></div>
+        <div class="breakdown-legend" id="breakdownLegend"></div>
+      </div>
+
+      <div class="section-header">動態 vs 靜態 對比</div>
+      <table class="compare-table">
+        <thead><tr><th>方案</th><th>年化利率</th><th>本期利息</th><th>撥款金額</th></tr></thead>
+        <tbody id="compareTable"></tbody>
+      </table>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">批次案件試算 · Batch Pricing (模擬 6 筆案件)</div>
+      <table class="batch-table">
+        <thead><tr><th>案件</th><th>核心買方</th><th>金額</th><th>期限</th><th>動態利率</th><th>靜態利率</th><th>節省</th></tr></thead>
+        <tbody id="batchTable"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<!-- 整合決策卡 (站尾) -->
+<div class="integration-bottom">
+  <div class="integration-bottom-text">
+    <strong>本站貢獻 · MVP 1 → 整合決策</strong>
+    <h4>應收帳款 NT$ 1,200 萬 → 動態利率 2.56% (vs 靜態 4.50%)</h4>
+    <p>上一站 <span class="tag-mono">MVP 3</span> 已確認銅庫存擔保品價值，下一站 <span class="tag-mono">MVP 2</span> 評估陳老闆 SME 本身信用 (取代缺失財報)。三項通過後 <span class="tag-mono">整合決策</span> 給出 1,500 萬撥款建議。</p>
+  </div>
+  <div class="integration-bottom-cta">
+    <a class="btn-next" href="MVP2-alt-credit-scoring.html">下一站 · MVP 2 替代信評 →</a>
+    <a class="btn-back" href="MVP3-inventory-var.html">← MVP 3 存貨 VaR</a>
+  </div>
+</div>
+
+<footer class="footer">DEMO · 模擬數據 · 非真實交易 · © 智慧供應鏈金融平台 V2 Framework</footer>
+
+<script>
+const BUYERS = {
+  tsmc:     {name:'台積電',     pd:0.0005, rating:'AAA', color:'#137a5e'},
+  foxconn:  {name:'鴻海集團',   pd:0.0015, rating:'AA',  color:'#2980c4'},
+  midcap:   {name:'中型上市公司', pd:0.005,  rating:'A',   color:'#0d4f7e'},
+  smallcap: {name:'中小型企業',   pd:0.02,   rating:'BBB', color:'#b8730a'},
+  risky:    {name:'高風險買方',   pd:0.05,   rating:'BB',  color:'#a23217'}
+};
+const LGD=0.55, OPS_BPS=0.003, LIQ_BPS=0.002;
+
+function dynamicRate({pd,tenor,fundingCost}){
+  const tenorYrs=tenor/365;
+  const buyerPremium=pd*LGD*Math.sqrt(Math.max(tenorYrs,0.01))*1.4; // simplified PD-based premium
+  const tenorPremium=0.0008*(tenor/30);
+  return {
+    funding:fundingCost,
+    buyer:buyerPremium,
+    tenor:tenorPremium,
+    ops:OPS_BPS,
+    liq:LIQ_BPS,
+    total:fundingCost+buyerPremium+tenorPremium+OPS_BPS+LIQ_BPS
+  };
+}
+function fmtMoney(v){
+  if(v>=1e8) return '$'+(v/1e8).toFixed(2)+'億';
+  if(v>=1e6) return '$'+(v/1e6).toFixed(2)+'M';
+  if(v>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+function fmtPct(v,d=2){return (v*100).toFixed(d)+'%'}
+
+let state={buyer:'tsmc',amount:12000000,tenor:90,funding:0.018,staticRate:0.045};
+// 預設帶入陳老闆對台積電應收 1,200 萬 / 90 天
+document.getElementById('buyer').value='tsmc';
+document.getElementById('amount').value=12000000;
+document.getElementById('tenor').value=90;
+document.getElementById('tenorVal').textContent='90 天';
+
+function render(){
+  const b=BUYERS[state.buyer];
+  const r=dynamicRate({pd:b.pd,tenor:state.tenor,fundingCost:state.funding});
+  const dynInt=state.amount*r.total*(state.tenor/365);
+  const statInt=state.amount*state.staticRate*(state.tenor/365);
+  const savings=statInt-dynInt;
+  const savingsPct=savings/statInt;
+
+  document.getElementById('dynRate').textContent=fmtPct(r.total);
+  document.getElementById('dynRateBuyer').textContent=b.name+' · '+b.rating;
+  document.getElementById('dynInterest').textContent=fmtMoney(dynInt);
+  document.getElementById('dynTenor').textContent=state.tenor+' 天 · '+fmtMoney(state.amount);
+  document.getElementById('staticInterest').textContent=fmtMoney(statInt);
+  document.getElementById('staticRateNote').textContent='@ '+fmtPct(state.staticRate);
+  const savingsEl=document.getElementById('savings');
+  savingsEl.textContent=(savings>=0?'+':'')+fmtMoney(Math.abs(savings));
+  document.getElementById('savingsPct').textContent=(savings>=0?'-':'+')+fmtPct(Math.abs(savingsPct));
+  const sm=document.querySelector('.metric.positive');
+  sm.classList.remove('positive','danger');
+  sm.classList.add(savings>=0?'positive':'danger');
+
+  document.getElementById('buyerName').textContent=b.name;
+  document.getElementById('amtInline').textContent=fmtMoney(state.amount);
+  document.getElementById('rateInline').textContent=fmtPct(r.total);
+  const sb=document.getElementById('savingsBadge');
+  sb.textContent=(savings>=0?'省下 ':'多付 ')+fmtMoney(Math.abs(savings));
+  sb.classList.toggle('neg',savings<0);
+
+  // breakdown bar
+  const components=[
+    {key:'funding',label:'資金成本',value:r.funding,color:'#0d4f7e'},
+    {key:'buyer',  label:'買方信用貼水',value:r.buyer,color:'#a23217'},
+    {key:'tenor',  label:'期限貼水',value:r.tenor,color:'#b8730a'},
+    {key:'ops',    label:'操作成本',value:r.ops,color:'#137a5e'},
+    {key:'liq',    label:'流動性溢酬',value:r.liq,color:'#5b6b85'}
+  ];
+  const bar=document.getElementById('breakdownBar');
+  bar.innerHTML='';
+  const legend=document.getElementById('breakdownLegend');
+  legend.innerHTML='';
+  components.forEach(c=>{
+    const pct=(c.value/r.total)*100;
+    bar.insertAdjacentHTML('beforeend',
+      `<div class="breakdown-segment" style="width:${pct.toFixed(2)}%;background:${c.color}" title="${c.label} ${fmtPct(c.value)}">${pct>10?fmtPct(c.value):''}</div>`);
+    legend.insertAdjacentHTML('beforeend',
+      `<div class="legend-item"><div class="legend-swatch" style="background:${c.color}"></div><div class="legend-text">${c.label}</div><div class="legend-value">${fmtPct(c.value)}</div></div>`);
+  });
+
+  // compare table
+  const ct=document.getElementById('compareTable');
+  ct.innerHTML='';
+  ct.insertAdjacentHTML('beforeend',`<tr class="row-dynamic"><td>動態定價 (本平台)</td><td class="mono">${fmtPct(r.total)}</td><td class="mono">${fmtMoney(dynInt)}</td><td class="mono">${fmtMoney(state.amount-dynInt)}</td></tr>`);
+  ct.insertAdjacentHTML('beforeend',`<tr><td>傳統靜態定價</td><td class="mono">${fmtPct(state.staticRate)}</td><td class="mono">${fmtMoney(statInt)}</td><td class="mono">${fmtMoney(state.amount-statInt)}</td></tr>`);
+
+  // batch
+  const batchSpec=[
+    {buyer:'tsmc',amount:8000000,tenor:30},
+    {buyer:'tsmc',amount:12000000,tenor:60},
+    {buyer:'foxconn',amount:3000000,tenor:45},
+    {buyer:'midcap',amount:6500000,tenor:90},
+    {buyer:'smallcap',amount:1500000,tenor:60},
+    {buyer:'risky',amount:800000,tenor:90}
+  ];
+  const bt=document.getElementById('batchTable');
+  bt.innerHTML='';
+  batchSpec.forEach((spec,i)=>{
+    const bb=BUYERS[spec.buyer];
+    const rr=dynamicRate({pd:bb.pd,tenor:spec.tenor,fundingCost:state.funding});
+    const di=spec.amount*rr.total*(spec.tenor/365);
+    const si=spec.amount*state.staticRate*(spec.tenor/365);
+    const sv=si-di;
+    bt.insertAdjacentHTML('beforeend',
+      `<tr><td>INV-${String(i+1).padStart(3,'0')}</td><td>${bb.name}</td><td class="mono">${fmtMoney(spec.amount)}</td><td class="mono">${spec.tenor}d</td><td class="mono" style="color:${bb.color};font-weight:600">${fmtPct(rr.total)}</td><td class="mono" style="color:#8a98b3">${fmtPct(state.staticRate)}</td><td class="mono" style="color:${sv>=0?'#137a5e':'#a23217'};font-weight:600">${(sv>=0?'+':'-')+fmtMoney(Math.abs(sv))}</td></tr>`);
+  });
+}
+
+document.getElementById('buyer').addEventListener('change',e=>{state.buyer=e.target.value;render()});
+document.getElementById('amount').addEventListener('input',e=>{state.amount=+e.target.value||0;render()});
+document.getElementById('tenor').addEventListener('input',e=>{state.tenor=+e.target.value;document.getElementById('tenorVal').textContent=state.tenor+' 天';render()});
+document.getElementById('funding').addEventListener('input',e=>{state.funding=+e.target.value/100;document.getElementById('fundingVal').textContent=(+e.target.value).toFixed(2)+'%';render()});
+document.getElementById('staticRate').addEventListener('input',e=>{state.staticRate=+e.target.value/100;document.getElementById('staticRateVal').textContent=(+e.target.value).toFixed(2)+'%';render()});
+document.querySelectorAll('.preset-amt').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.val;state.amount=v;document.getElementById('amount').value=v;render()}));
+
+render();
+
+// Before / After 切換
+document.querySelectorAll('.ba-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const target=t.dataset.ba;
+    document.querySelectorAll('.ba-tab').forEach(x=>x.classList.toggle('active',x.dataset.ba===target));
+    document.querySelectorAll('[data-ba-pane]').forEach(x=>x.classList.toggle('active',x.dataset.baPane===target));
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MVP 3 · 動態存貨價值監控 · 智慧供應鏈金融平台</title>
+<style>
+:root{
+  --c-bg:#f4f6fa; --c-surface:#fff; --c-surface-alt:#fafbfd;
+  --c-text:#0f1f3a; --c-text-2:#4a5878; --c-text-3:#8a98b3;
+  --c-accent:#0d4f7e; --c-accent-2:#2980c4;
+  --c-positive:#137a5e; --c-positive-bg:#e6f4ef;
+  --c-warn:#b8730a; --c-warn-bg:#fcf3e2;
+  --c-danger:#a23217; --c-danger-bg:#fbeae3;
+  --c-border:#dde4ee; --c-divider:#ebeff5; --c-chip:#eef2f7;
+  --r:8px; --r-lg:14px;
+  --shadow:0 1px 3px rgba(15,31,58,.06),0 4px 16px rgba(15,31,58,.04);
+  --font-sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang TC','Microsoft JhengHei',sans-serif;
+  --font-mono:'SF Mono','JetBrains Mono','Menlo','Consolas',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font-sans);background:var(--c-bg);color:var(--c-text);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.topbar{background:var(--c-surface);border-bottom:1px solid var(--c-border);padding:14px 32px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,var(--c-accent),var(--c-accent-2));color:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
+.brand-text strong{display:block;font-size:14px}
+.brand-text small{color:var(--c-text-3);font-size:11px;letter-spacing:.5px}
+.topnav{display:flex;gap:4px;flex-wrap:wrap}
+.topnav a{padding:6px 14px;border-radius:6px;font-size:13px;color:var(--c-text-2);text-decoration:none}
+.topnav a:hover{background:var(--c-chip);color:var(--c-text)}
+.topnav a.active{background:var(--c-accent);color:#fff}
+.page-header{padding:28px 32px 20px;background:var(--c-surface);border-bottom:1px solid var(--c-border)}
+.page-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:99px;background:var(--c-positive-bg);color:var(--c-positive);font-size:11px;font-weight:600;letter-spacing:.4px;margin-bottom:8px}
+.page-header h1{margin:0 0 4px;font-size:22px;font-weight:600}
+.page-header p{margin:0;color:var(--c-text-3);font-size:13px}
+.container{max-width:1320px;margin:0 auto;padding:24px 32px;display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media (max-width:1000px){.container{grid-template-columns:1fr}}
+.panel{background:var(--c-surface);border-radius:var(--r-lg);border:1px solid var(--c-border);box-shadow:var(--shadow);overflow:hidden}
+.panel-header{padding:14px 18px;border-bottom:1px solid var(--c-divider);font-size:11px;font-weight:600;color:var(--c-text-2);letter-spacing:.6px;text-transform:uppercase;background:var(--c-surface-alt)}
+.panel-body{padding:18px}
+label.field{display:block;margin-bottom:18px}
+label.field>span{display:block;font-size:12px;color:var(--c-text-2);margin-bottom:6px;font-weight:500}
+select,input[type=number]{width:100%;padding:8px 12px;border:1px solid var(--c-border);border-radius:var(--r);font-family:inherit;font-size:14px;background:var(--c-surface);color:var(--c-text)}
+select:focus,input:focus{outline:none;border-color:var(--c-accent);box-shadow:0 0 0 3px rgba(13,79,126,.1)}
+.range-with-value{display:flex;align-items:center;gap:10px}
+.range-with-value input[type=range]{flex:1;accent-color:var(--c-accent)}
+.range-with-value .value-display{font-family:var(--font-mono);font-size:13px;font-variant-numeric:tabular-nums;min-width:64px;text-align:right;color:var(--c-text)}
+.preset-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chip-btn{padding:5px 11px;border-radius:99px;border:1px solid var(--c-border);background:var(--c-surface);font-size:12px;cursor:pointer;color:var(--c-text-2);transition:all .15s;font-family:inherit}
+.chip-btn:hover{background:var(--c-chip);border-color:var(--c-text-3)}
+.chip-btn.active{background:var(--c-accent);color:#fff;border-color:var(--c-accent)}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border-bottom:1px solid var(--c-divider)}
+.metric{padding:18px 20px;border-right:1px solid var(--c-divider);display:flex;flex-direction:column;gap:4px;background:var(--c-surface-alt)}
+.metric:last-child{border-right:none}
+.metric-label{font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.5px}
+.metric-value{font-family:var(--font-mono);font-variant-numeric:tabular-nums;font-size:24px;font-weight:600;color:var(--c-text);line-height:1.2}
+.metric-sub{font-size:11px;color:var(--c-text-3);font-family:var(--font-mono)}
+.metric.highlight .metric-value{color:var(--c-accent)}
+.metric.positive .metric-value{color:var(--c-positive)}
+.metric.warn .metric-value{color:var(--c-warn)}
+.metric.danger .metric-value{color:var(--c-danger)}
+.section-header{padding:18px 18px 6px;font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.callout{margin:14px 18px;padding:12px 14px;border-radius:var(--r);background:var(--c-positive-bg);border-left:3px solid var(--c-positive);font-size:13px;color:var(--c-text)}
+.callout.warn{background:var(--c-warn-bg);border-color:var(--c-warn)}
+.callout.danger{background:var(--c-danger-bg);border-color:var(--c-danger)}
+.callout strong{font-weight:600}
+.chart-wrap{padding:8px 18px 18px}
+svg{display:block;width:100%}
+.var-table{width:100%;border-collapse:collapse;margin:0;font-size:13px;font-variant-numeric:tabular-nums}
+.var-table th,.var-table td{padding:10px 18px;text-align:right;border-bottom:1px solid var(--c-divider)}
+.var-table th{text-align:left;font-weight:600;color:var(--c-text-2);background:var(--c-surface-alt);text-transform:uppercase;font-size:11px;letter-spacing:.4px}
+.var-table td:first-child{text-align:left;font-weight:500}
+.var-table td.mono{font-family:var(--font-mono)}
+.var-table tr.row-best{background:rgba(19,122,94,.06)}
+.footer{padding:16px 32px;text-align:center;font-size:12px;color:var(--c-text-3)}
+
+/* === 跨 MVP 導覽 + 主角卡 + Before/After + tooltip + 整合卡 === */
+.cross-nav{display:flex;align-items:center;gap:8px;padding:10px 32px;background:var(--c-surface-alt);border-bottom:1px solid var(--c-divider);font-size:12px;flex-wrap:wrap}
+.cross-nav a{color:var(--c-text-3);text-decoration:none;padding:4px 8px;border-radius:4px}
+.cross-nav a:hover{color:var(--c-text);background:var(--c-chip)}
+.cross-nav .current{color:var(--c-accent);font-weight:600;padding:4px 8px;border-radius:4px;background:rgba(13,79,126,.08)}
+.cross-nav .sep{color:var(--c-text-3)}
+
+.persona-card{background:linear-gradient(135deg,#fff,var(--c-surface-alt));border:1px solid var(--c-border);border-radius:var(--r-lg);margin:14px 32px 0;box-shadow:var(--shadow);overflow:hidden}
+.persona-head{padding:14px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;border-bottom:1px solid transparent;transition:border-color .15s}
+.persona-card.open .persona-head{border-bottom-color:var(--c-divider)}
+.persona-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--c-accent),var(--c-accent-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.persona-summary{flex:1;font-size:13px;color:var(--c-text-2)}
+.persona-summary strong{color:var(--c-text);font-size:14px;display:block;margin-bottom:1px}
+.persona-toggle{font-size:12px;color:var(--c-accent);font-weight:600;flex-shrink:0}
+.persona-body{display:none;padding:14px 18px;background:var(--c-surface);grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.persona-card.open .persona-body{display:grid}
+.persona-fact{font-size:12px}
+.persona-fact small{display:block;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.4px;font-size:10px;margin-bottom:2px}
+.persona-fact strong{font-family:var(--font-mono);color:var(--c-text);font-size:13px}
+
+.ba-card{margin:14px 32px 0;background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.ba-tabs{display:flex;background:var(--c-surface-alt);border-bottom:1px solid var(--c-divider)}
+.ba-tab{flex:1;padding:14px 18px;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:600;color:var(--c-text-3);cursor:pointer;border-bottom:3px solid transparent;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.ba-tab:hover{color:var(--c-text-2);background:rgba(0,0,0,.02)}
+.ba-tab.active{color:var(--c-text);background:var(--c-surface)}
+.ba-tab.tab-bad.active{border-bottom-color:var(--c-danger);color:var(--c-danger)}
+.ba-tab.tab-good.active{border-bottom-color:var(--c-positive);color:var(--c-positive)}
+.ba-icon{display:inline-flex;width:20px;height:20px;border-radius:50%;font-size:11px;align-items:center;justify-content:center;color:#fff;font-weight:700}
+.ba-tab.tab-bad .ba-icon{background:var(--c-danger)}
+.ba-tab.tab-good .ba-icon{background:var(--c-positive)}
+.ba-content{display:none;padding:24px;grid-template-columns:1fr 1.4fr;gap:24px;align-items:center}
+.ba-content.active{display:grid}
+@media (max-width:768px){.ba-content.active{grid-template-columns:1fr}}
+.ba-result{padding:18px 22px;border-radius:10px}
+.ba-result.bad{background:var(--c-danger-bg);border:1px solid rgba(162,50,23,.2)}
+.ba-result.good{background:var(--c-positive-bg);border:1px solid rgba(19,122,94,.2)}
+.ba-result-label{font-size:11px;color:var(--c-text-3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:6px}
+.ba-result-value{font-family:var(--font-mono);font-size:30px;font-weight:700;line-height:1.1;margin-bottom:6px}
+.ba-result.bad .ba-result-value{color:var(--c-danger)}
+.ba-result.good .ba-result-value{color:var(--c-positive)}
+.ba-result-detail{font-size:12px;color:var(--c-text-2);font-family:var(--font-mono)}
+.ba-explain h4{margin:0 0 8px;font-size:14px;font-weight:600}
+.ba-explain ul{margin:0;padding-left:18px;font-size:13px;color:var(--c-text-2);line-height:1.7}
+.ba-explain ul li strong{color:var(--c-text)}
+
+.why{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--c-chip);color:var(--c-text-3);font-size:10px;font-weight:700;cursor:help;margin-left:4px;position:relative;font-family:var(--font-sans);text-transform:none;letter-spacing:0}
+.why:hover{background:var(--c-accent);color:#fff}
+.why::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#0f1f3a;color:#fff;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:400;white-space:normal;width:240px;line-height:1.5;opacity:0;pointer-events:none;transition:opacity .15s;z-index:100;box-shadow:0 4px 12px rgba(0,0,0,.15);text-align:left}
+.why:hover::after{opacity:1}
+.why::before{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;transform:translateX(-50%);border:4px solid transparent;border-top-color:#0f1f3a;opacity:0;pointer-events:none;transition:opacity .15s}
+.why:hover::before{opacity:1}
+
+.integration-bottom{margin:24px 32px 0;background:linear-gradient(135deg,#0d4f7e 0%,#1a3354 100%);color:#fff;border-radius:var(--r-lg);padding:24px 28px;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:center;box-shadow:var(--shadow)}
+@media (max-width:768px){.integration-bottom{grid-template-columns:1fr}}
+.integration-bottom-text strong{display:block;font-size:11px;letter-spacing:.5px;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:6px}
+.integration-bottom-text h4{margin:0 0 6px;font-size:18px;font-weight:600}
+.integration-bottom-text p{margin:0;font-size:13px;color:rgba(255,255,255,.85);line-height:1.6}
+.integration-bottom-text p span.tag-mono{font-family:var(--font-mono);background:rgba(255,255,255,.12);padding:2px 8px;border-radius:4px;margin:0 2px}
+.integration-bottom-cta{display:flex;flex-direction:column;gap:8px}
+.integration-bottom .btn-next{padding:10px 18px;background:#fff;color:var(--c-accent);border-radius:6px;text-decoration:none;font-weight:600;font-size:13px;text-align:center;transition:all .15s;white-space:nowrap}
+.integration-bottom .btn-next:hover{background:var(--c-positive-bg)}
+.integration-bottom .btn-back{padding:10px 18px;background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.3);border-radius:6px;text-decoration:none;font-size:13px;text-align:center;transition:all .15s}
+.integration-bottom .btn-back:hover{background:rgba(255,255,255,.08)}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="logo">SC</div><div class="brand-text"><strong>智慧供應鏈金融平台</strong><small>SMART SUPPLY CHAIN FINANCE PLATFORM</small></div></div>
+  <nav class="topnav"><a href="index.html">總覽</a><a href="MVP3-inventory-var.html" class="active">MVP 3 · 存貨 VaR</a><a href="MVP1-reverse-factoring.html">MVP 1 · 動態定價</a><a href="MVP2-alt-credit-scoring.html">MVP 2 · 替代信評</a></nav>
+</header>
+
+<section class="page-header">
+  <div class="page-tag">● MVP 3 · GREENFIELD · 第一棒</div>
+  <h1>動態存貨價值監控系統</h1>
+  <p>Inventory Value-at-Risk Monitor — 將高波動存貨安全轉為可融資資產</p>
+</section>
+
+<!-- 跨 MVP 導覽 -->
+<div class="cross-nav">
+  <a href="index.html">🏠 案件總覽</a>
+  <span class="sep">›</span>
+  <span class="current">▶ MVP 3 · 存貨 VaR (本站)</span>
+  <span class="sep">›</span>
+  <a href="MVP1-reverse-factoring.html">MVP 1 · 動態定價</a>
+  <span class="sep">›</span>
+  <a href="MVP2-alt-credit-scoring.html">MVP 2 · 替代信評</a>
+  <span class="sep">›</span>
+  <a href="index.html">整合決策</a>
+</div>
+
+<!-- 主角案件背景卡 -->
+<div class="persona-card open" id="persona">
+  <div class="persona-head" onclick="document.getElementById('persona').classList.toggle('open');this.querySelector('.persona-toggle').textContent=document.getElementById('persona').classList.contains('open')?'收合 ▴':'展開 ▾'">
+    <div class="persona-avatar">陳</div>
+    <div class="persona-summary">
+      <strong>陳老闆 · 精密金屬加工廠 · 銅原料庫存 800 萬</strong>
+      被傳統銀行拒絕的典型 SME — 廠房已抵押、無聯徵紀錄、商品擔保品銀行不接受。本站要回答:這 800 萬銅實際可融多少？
+    </div>
+    <span class="persona-toggle">收合 ▴</span>
+  </div>
+  <div class="persona-body">
+    <div class="persona-fact"><small>公司</small><strong>精密金屬加工廠</strong></div>
+    <div class="persona-fact"><small>年資 / 員工</small><strong>8 年 / 35 人</strong></div>
+    <div class="persona-fact"><small>年營收</small><strong>NT$ 5,000 萬</strong></div>
+    <div class="persona-fact"><small>主客戶</small><strong>台積電 40% · 鴻海 25%</strong></div>
+    <div class="persona-fact"><small>應收帳款</small><strong>NT$ 1,200 萬</strong></div>
+    <div class="persona-fact"><small>銅原料庫存</small><strong>NT$ 800 萬</strong></div>
+    <div class="persona-fact"><small>融資需求</small><strong>NT$ 1,500 萬</strong></div>
+    <div class="persona-fact"><small>信用</small><strong>無聯徵 · 24期SCM 100%</strong></div>
+  </div>
+</div>
+
+<!-- Before / After 切換 -->
+<div class="ba-card">
+  <div class="ba-tabs">
+    <button class="ba-tab tab-bad" data-ba="bad"><span class="ba-icon">✕</span>傳統銀行的做法</button>
+    <button class="ba-tab tab-good active" data-ba="good"><span class="ba-icon">✓</span>我們平台的做法</button>
+  </div>
+  <div class="ba-content" data-ba-pane="bad">
+    <div class="ba-result bad">
+      <div class="ba-result-label">傳統銀行給陳老闆的答案</div>
+      <div class="ba-result-value">退件</div>
+      <div class="ba-result-detail">商品擔保品 · 估值困難 · 拒絕</div>
+    </div>
+    <div class="ba-explain">
+      <h4>為什麼 800 萬銅原料完全融不到錢？</h4>
+      <ul>
+        <li><strong>銀行手冊只接受</strong>不動產、上市股票、現金存款做擔保品</li>
+        <li><strong>商品價格波動大</strong> — 銅、鋼、油都被歸類「不可控風險」</li>
+        <li><strong>沒有計量工具</strong>來算「最壞會跌多少」 — 只能保守拒絕</li>
+        <li><strong>變現性疑慮</strong> — 信評部不知道急售要折價多少</li>
+        <li>結果:陳老闆 800 萬庫存 = <strong>0 萬可融資</strong> → 整個案件直接退件</li>
+      </ul>
+    </div>
+  </div>
+  <div class="ba-content active" data-ba-pane="good">
+    <div class="ba-result good">
+      <div class="ba-result-label">平台給陳老闆的答案</div>
+      <div class="ba-result-value">714 萬</div>
+      <div class="ba-result-detail">5 天 95% VaR · LTV 89.3% · 銅原料 800 萬</div>
+    </div>
+    <div class="ba-explain">
+      <h4>用 Value-at-Risk 計算「實際風險暴露」</h4>
+      <ul>
+        <li>取銅 252 個交易日歷史 → <strong>跑歷史模擬 + 參數法雙重 VaR</strong></li>
+        <li>5 天 95% 信賴區間 → 最大可能跌幅 <strong>5.69%</strong></li>
+        <li>扣 5% 安全邊際後 → 推薦 LTV <strong>89.3%</strong></li>
+        <li>800 萬庫存 × 89.3% = <strong>NT$ 714 萬可抵押</strong></li>
+        <li>監理可解釋:VaR 是 Basel II 標準量化方法，非黑箱</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="container">
+  <aside class="panel">
+    <div class="panel-header">參數設定 · Inputs</div>
+    <div class="panel-body">
+      <label class="field">
+        <span>標的商品</span>
+        <select id="commodity">
+          <option value="copper">電解銅 (Copper)</option>
+          <option value="dram">DRAM 記憶體</option>
+          <option value="steel">熱軋鋼板 (Steel)</option>
+          <option value="oil">布蘭特原油 (Brent)</option>
+          <option value="gold">黃金 (Gold)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>庫存帳面價值 (NTD)</span>
+        <input type="number" id="inventoryValue" value="50000000" step="1000000" min="0">
+        <div class="preset-row">
+          <button class="chip-btn preset-amt" data-val="10000000">$10M</button>
+          <button class="chip-btn preset-amt" data-val="50000000">$50M</button>
+          <button class="chip-btn preset-amt" data-val="200000000">$200M</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>處分窗 Horizon</span>
+        <div class="range-with-value">
+          <input type="range" id="horizon" min="1" max="20" value="5">
+          <span class="value-display" id="horizonVal">5 天</span>
+        </div>
+      </label>
+      <label class="field">
+        <span>信賴水準 Confidence</span>
+        <div class="preset-row">
+          <button class="chip-btn confidence-btn active" data-val="0.95">95%</button>
+          <button class="chip-btn confidence-btn" data-val="0.99">99%</button>
+        </div>
+      </label>
+      <label class="field">
+        <span>安全邊際 Safety Margin</span>
+        <div class="range-with-value">
+          <input type="range" id="margin" min="0" max="15" step="1" value="5">
+          <span class="value-display" id="marginVal">5%</span>
+        </div>
+      </label>
+      <label class="field">
+        <span>Stress Multiplier (波動衝擊係數)</span>
+        <div class="range-with-value">
+          <input type="range" id="stress" min="1" max="3" step="0.1" value="1.5">
+          <span class="value-display" id="stressVal">1.5×</span>
+        </div>
+      </label>
+    </div>
+  </aside>
+
+  <main class="panel">
+    <div class="metrics-grid">
+      <div class="metric highlight">
+        <div class="metric-label">VaR · 歷史模擬<span class="why" data-tip="把過去 252 天真實漲跌排序，第 5 百分位數即「95% 機率不會更差的虧損」。不假設常態分配，貼近實際市場行為。">?</span></div>
+        <div class="metric-value" id="histVarPct">—</div>
+        <div class="metric-sub" id="histVarAmt">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">VaR · 參數法<span class="why" data-tip="假設報酬服從常態分配，用平均值 ± Z-score × 標準差算出。常用於監理報告，與歷史法並用可交叉驗證。">?</span></div>
+        <div class="metric-value" id="paramVarPct">—</div>
+        <div class="metric-sub" id="paramVarAmt">—</div>
+      </div>
+      <div class="metric positive">
+        <div class="metric-label">建議授信額度<span class="why" data-tip="LTV (Loan-to-Value) = 1 − VaR − 安全邊際。意思是「即使最壞情況發生，銀行仍有足夠擔保價值不虧損」。">?</span></div>
+        <div class="metric-value" id="ltvAmount">—</div>
+        <div class="metric-sub" id="ltvPct">—</div>
+      </div>
+      <div class="metric warn">
+        <div class="metric-label">壓力情境 VaR<span class="why" data-tip="把波動度乘上壓力係數模擬「黑天鵝事件」。例如 2008 金融海嘯銅價單日跌 15%，平時 VaR 5% × 1.5 倍 = 7.5%。">?</span></div>
+        <div class="metric-value" id="stressVarPct">—</div>
+        <div class="metric-sub" id="stressNote">vol shock</div>
+      </div>
+    </div>
+
+    <div class="callout" id="recoCallout">
+      <strong>建議:</strong> 依目前參數，本批庫存可作抵押申請最高 <strong id="maxFundingInline">—</strong>，相當於帳面 <strong id="maxLtvInline">—</strong>。
+    </div>
+
+    <div class="section-header">標的歷史價格 · 252 交易日</div>
+    <div class="chart-wrap"><svg id="priceChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg></div>
+
+    <div class="section-header">日報酬率分布 + VaR 截斷點</div>
+    <div class="chart-wrap"><svg id="histChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg></div>
+
+    <div class="section-header">敏感度分析 · VaR vs Horizon × Confidence</div>
+    <table class="var-table">
+      <thead><tr><th>處分窗</th><th>95% VaR</th><th>99% VaR</th><th>建議 LTV (95%)</th></tr></thead>
+      <tbody id="sensitivityTable"></tbody>
+    </table>
+  </main>
+</div>
+
+<!-- 整合決策卡 (站尾) -->
+<div class="integration-bottom">
+  <div class="integration-bottom-text">
+    <strong>本站貢獻 · MVP 3 → 整合決策</strong>
+    <h4>銅庫存 NT$ 800 萬 → 可抵押 NT$ 714 萬 (LTV 89.3%)</h4>
+    <p>下一站 <span class="tag-mono">MVP 1</span> 用同樣計量手法處理應收帳款定價，<span class="tag-mono">MVP 2</span> 評估陳老闆本身信用，三項通過後 <span class="tag-mono">整合決策</span> 給出 1,500 萬撥款建議。</p>
+  </div>
+  <div class="integration-bottom-cta">
+    <a class="btn-next" href="MVP1-reverse-factoring.html">下一站 · MVP 1 動態定價 →</a>
+    <a class="btn-back" href="index.html">← 回案件總覽</a>
+  </div>
+</div>
+
+<footer class="footer">DEMO · 模擬數據 · 非真實交易 · © 智慧供應鏈金融平台 V2 Framework</footer>
+
+<script>
+const COMMODITIES = {
+  copper: {name:'Copper', drift:0.04, vol:0.25, startPrice:300, seed:101, unit:'NTD/kg'},
+  dram:   {name:'DRAM',   drift:-0.02, vol:0.50, startPrice:520, seed:202, unit:'NTD/GB'},
+  steel:  {name:'Steel',  drift:0.02, vol:0.18, startPrice:28, seed:303, unit:'NTD/kg'},
+  oil:    {name:'Brent',  drift:0.03, vol:0.38, startPrice:2500, seed:404, unit:'NTD/桶'},
+  gold:   {name:'Gold',   drift:0.06, vol:0.15, startPrice:2400, seed:505, unit:'NTD/g'}
+};
+
+function seededRandom(seed){let s=seed;return()=>{s=(s*1664525+1013904223)&0xFFFFFFFF;return(s>>>0)/0x100000000}}
+function gen(commodity, n=252){
+  const c=COMMODITIES[commodity], rand=seededRandom(c.seed);
+  const dailyDrift=c.drift/252, dailyVol=c.vol/Math.sqrt(252);
+  let p=c.startPrice; const arr=[p];
+  for(let i=1;i<n;i++){
+    const u1=Math.max(rand(),1e-9), u2=rand();
+    const z=Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2);
+    p=p*Math.exp(dailyDrift-0.5*dailyVol*dailyVol+dailyVol*z);
+    arr.push(p);
+  }
+  return arr;
+}
+function returns(prices){const r=[];for(let i=1;i<prices.length;i++)r.push(Math.log(prices[i]/prices[i-1]));return r}
+function histVaR(rets,horizon,conf){
+  const scaled=rets.map(r=>r*Math.sqrt(horizon));
+  const sorted=[...scaled].sort((a,b)=>a-b);
+  const idx=Math.max(0,Math.floor((1-conf)*sorted.length));
+  return -sorted[idx];
+}
+function paramVaR(rets,horizon,conf){
+  const m=rets.reduce((a,b)=>a+b,0)/rets.length;
+  const v=rets.reduce((s,r)=>s+(r-m)**2,0)/rets.length;
+  const sigma=Math.sqrt(v);
+  const z={'0.95':1.645,'0.99':2.326}[conf.toFixed(2)] || 1.645;
+  return z*sigma*Math.sqrt(horizon);
+}
+function fmtMoney(v){
+  if(v>=1e8) return '$'+(v/1e8).toFixed(2)+'億';
+  if(v>=1e6) return '$'+(v/1e6).toFixed(1)+'M';
+  if(v>=1e3) return '$'+(v/1e3).toFixed(0)+'K';
+  return '$'+v.toFixed(0);
+}
+function fmtPct(v,d=2){return (v*100).toFixed(d)+'%'}
+
+function lineChart(svg,prices,unit){
+  svg.innerHTML='';
+  const W=800,H=220,pad={l:50,r:14,t:14,b:30};
+  const minP=Math.min(...prices), maxP=Math.max(...prices);
+  const range=maxP-minP||1;
+  const x=i=>pad.l+(i/(prices.length-1))*(W-pad.l-pad.r);
+  const y=p=>pad.t+(1-(p-minP)/range)*(H-pad.t-pad.b);
+  // grid
+  const gridY=[0,0.25,0.5,0.75,1];
+  for(const t of gridY){
+    const yy=pad.t+t*(H-pad.t-pad.b);
+    svg.insertAdjacentHTML('beforeend',`<line x1="${pad.l}" x2="${W-pad.r}" y1="${yy}" y2="${yy}" stroke="#ebeff5"/>`);
+    const v=maxP-t*range;
+    svg.insertAdjacentHTML('beforeend',`<text x="${pad.l-8}" y="${yy+4}" text-anchor="end" font-size="10" fill="#8a98b3" font-family="SF Mono,monospace">${v.toFixed(0)}</text>`);
+  }
+  // path
+  let d='M';
+  prices.forEach((p,i)=>{d+=`${i===0?'':' L'}${x(i).toFixed(1)} ${y(p).toFixed(1)}`});
+  // area fill
+  let area=d+` L ${x(prices.length-1).toFixed(1)} ${H-pad.b} L ${pad.l} ${H-pad.b} Z`;
+  svg.insertAdjacentHTML('beforeend',`<path d="${area}" fill="rgba(13,79,126,.08)"/>`);
+  svg.insertAdjacentHTML('beforeend',`<path d="${d}" stroke="#0d4f7e" stroke-width="1.5" fill="none"/>`);
+  // x labels
+  const labels=['Day 0','Day 63','Day 126','Day 189','Day 252'];
+  labels.forEach((l,i)=>{
+    const xx=pad.l+(i/4)*(W-pad.l-pad.r);
+    svg.insertAdjacentHTML('beforeend',`<text x="${xx}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8a98b3">${l}</text>`);
+  });
+  svg.insertAdjacentHTML('beforeend',`<text x="${W-pad.r}" y="${pad.t+10}" text-anchor="end" font-size="10" fill="#8a98b3">${unit}</text>`);
+}
+
+function histogram(svg,rets,varCut95,varCut99){
+  svg.innerHTML='';
+  const W=800,H=220,pad={l:50,r:14,t:14,b:30};
+  const min=Math.min(...rets), max=Math.max(...rets);
+  const bins=40;
+  const w=(max-min)/bins;
+  const counts=new Array(bins).fill(0);
+  rets.forEach(r=>{
+    let i=Math.floor((r-min)/w);
+    if(i>=bins) i=bins-1;
+    if(i<0) i=0;
+    counts[i]++;
+  });
+  const maxC=Math.max(...counts);
+  const x=i=>pad.l+(i/bins)*(W-pad.l-pad.r);
+  const y=c=>pad.t+(1-c/maxC)*(H-pad.t-pad.b);
+  // grid
+  for(let t=0;t<=4;t++){
+    const yy=pad.t+(t/4)*(H-pad.t-pad.b);
+    svg.insertAdjacentHTML('beforeend',`<line x1="${pad.l}" x2="${W-pad.r}" y1="${yy}" y2="${yy}" stroke="#ebeff5"/>`);
+  }
+  // bars
+  const barW=(W-pad.l-pad.r)/bins;
+  counts.forEach((c,i)=>{
+    const binCenter=min+(i+0.5)*w;
+    const isLeftTail95=binCenter<-varCut95;
+    const isLeftTail99=binCenter<-varCut99;
+    const color=isLeftTail99?'#a23217':(isLeftTail95?'#b8730a':'#2980c4');
+    svg.insertAdjacentHTML('beforeend',`<rect x="${x(i)+1}" y="${y(c)}" width="${barW-2}" height="${H-pad.b-y(c)}" fill="${color}" opacity="0.7"/>`);
+  });
+  // VaR cut lines
+  const cut95X=pad.l+((-varCut95-min)/(max-min))*(W-pad.l-pad.r);
+  const cut99X=pad.l+((-varCut99-min)/(max-min))*(W-pad.l-pad.r);
+  svg.insertAdjacentHTML('beforeend',`<line x1="${cut95X}" x2="${cut95X}" y1="${pad.t}" y2="${H-pad.b}" stroke="#b8730a" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+  svg.insertAdjacentHTML('beforeend',`<text x="${cut95X+4}" y="${pad.t+12}" font-size="10" fill="#b8730a" font-weight="600">95% VaR</text>`);
+  svg.insertAdjacentHTML('beforeend',`<line x1="${cut99X}" x2="${cut99X}" y1="${pad.t}" y2="${H-pad.b}" stroke="#a23217" stroke-width="1.5" stroke-dasharray="4 3"/>`);
+  svg.insertAdjacentHTML('beforeend',`<text x="${cut99X+4}" y="${pad.t+26}" font-size="10" fill="#a23217" font-weight="600">99% VaR</text>`);
+  // x axis
+  for(let t=0;t<=4;t++){
+    const xx=pad.l+(t/4)*(W-pad.l-pad.r);
+    const v=min+(t/4)*(max-min);
+    svg.insertAdjacentHTML('beforeend',`<text x="${xx}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8a98b3" font-family="SF Mono,monospace">${(v*100).toFixed(1)}%</text>`);
+  }
+}
+
+let state={commodity:'copper',inventoryValue:8000000,horizon:5,confidence:0.95,margin:5,stress:1.5};
+// 預設帶入陳老闆 800 萬銅原料
+document.getElementById('inventoryValue').value=8000000;
+
+function refresh(){
+  const prices=gen(state.commodity);
+  const rets=returns(prices);
+  const varCut95_h=histVaR(rets,state.horizon,0.95);
+  const varCut99_h=histVaR(rets,state.horizon,0.99);
+  const histV=state.confidence===0.95?varCut95_h:varCut99_h;
+  const paramV=paramVaR(rets,state.horizon,state.confidence);
+  const stressV=histV*state.stress;
+  const safety=state.margin/100;
+  const ltvPct=Math.max(0,1-histV-safety);
+  const ltvAmt=state.inventoryValue*ltvPct;
+
+  document.getElementById('histVarPct').textContent=fmtPct(histV);
+  document.getElementById('histVarAmt').textContent='損失 '+fmtMoney(state.inventoryValue*histV);
+  document.getElementById('paramVarPct').textContent=fmtPct(paramV);
+  document.getElementById('paramVarAmt').textContent='損失 '+fmtMoney(state.inventoryValue*paramV);
+  document.getElementById('ltvAmount').textContent=fmtMoney(ltvAmt);
+  document.getElementById('ltvPct').textContent='LTV '+fmtPct(ltvPct,1);
+  document.getElementById('stressVarPct').textContent=fmtPct(stressV);
+  document.getElementById('stressNote').textContent='vol ×'+state.stress.toFixed(1);
+
+  document.getElementById('maxFundingInline').textContent=fmtMoney(ltvAmt);
+  document.getElementById('maxLtvInline').textContent=fmtPct(ltvPct,1);
+
+  const cal=document.getElementById('recoCallout');
+  cal.classList.remove('warn','danger');
+  if(histV>0.15) cal.classList.add('danger');
+  else if(histV>0.08) cal.classList.add('warn');
+
+  // 1-day daily returns for histogram (always 1d for visual clarity)
+  histogram(document.getElementById('histChart'),rets,
+    histVaR(rets,1,0.95),histVaR(rets,1,0.99));
+  lineChart(document.getElementById('priceChart'),prices,COMMODITIES[state.commodity].unit);
+
+  const tbody=document.getElementById('sensitivityTable');
+  tbody.innerHTML='';
+  [1,5,10,20].forEach(h=>{
+    const v95=histVaR(rets,h,0.95);
+    const v99=histVaR(rets,h,0.99);
+    const ltv=Math.max(0,1-v95-safety);
+    const isCurrent=h===state.horizon;
+    tbody.insertAdjacentHTML('beforeend',
+      `<tr class="${isCurrent?'row-best':''}"><td>${h} 天${isCurrent?' (目前)':''}</td><td class="mono">${fmtPct(v95)}</td><td class="mono">${fmtPct(v99)}</td><td class="mono">${fmtPct(ltv,1)}</td></tr>`);
+  });
+}
+
+document.getElementById('commodity').addEventListener('change',e=>{state.commodity=e.target.value;refresh()});
+document.getElementById('inventoryValue').addEventListener('input',e=>{state.inventoryValue=+e.target.value||0;refresh()});
+document.getElementById('horizon').addEventListener('input',e=>{state.horizon=+e.target.value;document.getElementById('horizonVal').textContent=state.horizon+' 天';refresh()});
+document.getElementById('margin').addEventListener('input',e=>{state.margin=+e.target.value;document.getElementById('marginVal').textContent=state.margin+'%';refresh()});
+document.getElementById('stress').addEventListener('input',e=>{state.stress=+e.target.value;document.getElementById('stressVal').textContent=state.stress.toFixed(1)+'×';refresh()});
+document.querySelectorAll('.preset-amt').forEach(b=>b.addEventListener('click',()=>{const v=+b.dataset.val;state.inventoryValue=v;document.getElementById('inventoryValue').value=v;refresh()}));
+document.querySelectorAll('.confidence-btn').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('.confidence-btn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');state.confidence=+b.dataset.val;refresh();
+}));
+
+refresh();
+
+// Before / After 切換
+document.querySelectorAll('.ba-tab').forEach(t=>{
+  t.addEventListener('click',()=>{
+    const target=t.dataset.ba;
+    document.querySelectorAll('.ba-tab').forEach(x=>x.classList.toggle('active',x.dataset.ba===target));
+    document.querySelectorAll('[data-ba-pane]').forEach(x=>x.classList.toggle('active',x.dataset.baPane===target));
+  });
+});
+</script>
+</body>
+</html>
